@@ -179,7 +179,7 @@ function renderQ() {
 
 /* ── Choice (FRAME / ExA) ── */
 function renderChoiceQ(q) {
-  const html = q.question.replace(/\(\s*\)/g, '<span class="blank">(　　　)</span>');
+  const html = q.question.replace(/(\(\s*\))/g, '<span class="blank">(　　　)</span>');
   $('q-text').innerHTML = html;
 
   const NUMS = ['①', '②', '③', '④'];
@@ -676,7 +676,7 @@ $('menu-close-area').addEventListener('click', closeMenu);
 let currentSubject = 'grammar';
 
 function setMenuActive(subject) {
-  ['menu-grammar', 'menu-eigo', 'menu-vocab'].forEach(id => {
+  ['menu-grammar', 'menu-eigo', 'menu-vocab', 'menu-reading'].forEach(id => {
     $(id).classList.toggle('active', id === 'menu-' + subject);
   });
   currentSubject = subject;
@@ -718,6 +718,159 @@ function renderEigo() {
     body.appendChild(card);
   });
 }
+
+/* ── Reading Player (絶滅危惧種) ── */
+const READING_PARAS = [
+  { num: 1, text: '絶滅危惧種とは、近い将来に絶滅する可能性がある動植物のグループのことです。その種の最後の動物が死に、それ以上存在しなくなったとき、絶滅が起こります。多くの種が絶滅寸前であり、私たちが何も対策をしなければ、地球上から消えてしまうかもしれません。種が絶滅危惧種になる理由は多くありますが、最も害をもたらすのは、生息地の破壊・狩猟・乱獲といった人間の活動です。' },
+  { num: 2, text: '生息地の破壊は、動物が絶滅危惧種になる主な原因です。これは二つの形で起こります。まず、人間が新しい地域に移り住む際、家や農地を建てるために木を伐採します。これにより動物の生息地、つまり植物や動物が通常生活する自然環境が破壊され、食べ物がなくなってしまいます。また、化学物質を含む工場からの汚水が川に流れ込んだり、農地で使われる農薬がその地域に住む動物を死に至らしめることもあります。' },
+  { num: 3, text: '絶滅危惧種は、狩猟や漁業の結果でもあります。アラビアオリックスのような動物は、肉の高い値段のために絶滅寸前です。毛皮・骨・皮のため、またはスポーツのために殺される動物もいます。例えば、一部のアザラシはコートを作るための毛皮目的で殺され、ほぼ絶滅しかけています。トラは薬やお茶を作るために撃たれ、ワニは靴やバッグのために捕獲されます。クジラ・マグロ・サメなどの大型海洋生物は乱獲によって絶滅危惧種になっています。フカヒレスープや寿司など、人々が好む特別な料理を作るために大量に捕獲されるためです。' },
+  { num: 4, text: '個人や政府は、より多くの動植物が絶滅危惧種になるのを防ぐためにどのような措置を取れるでしょうか。私たちは自然環境を汚染しないよう努め、動物の生息地を破壊する農家や企業には財政的な罰則を設けるべきです。一般市民は、アザラシの毛皮やワニ皮のバッグなど、動物の体から作られた製品を買わないことで協力できます。政府も、絶滅危惧種の狩猟・漁業・取引を法律で禁止することができます。また、より多くの絶滅危惧動物を繁殖させ、後に野生に放つ動物保護区や動物園への資金提供も可能です。私たち全員がこれらの取り組みに協力すれば、子どもたちやその子孫もこの地球を楽しめるよう、地球を守ることができます。' }
+];
+
+const rdState = {
+  playing: false,
+  loop: false,
+  rate: 1.0,
+  current: -1,
+  jaVoice: null,
+  voicesReady: false
+};
+
+function rdInitVoices() {
+  if (typeof speechSynthesis === 'undefined') return Promise.resolve();
+  if (rdState.voicesReady) return Promise.resolve();
+  return new Promise(resolve => {
+    const pick = () => {
+      const vs = speechSynthesis.getVoices();
+      rdState.jaVoice = vs.find(v => v.lang === 'ja-JP') || vs.find(v => v.lang.startsWith('ja')) || null;
+      rdState.voicesReady = true;
+      resolve();
+    };
+    const vs = speechSynthesis.getVoices();
+    if (vs.length) { pick(); return; }
+    speechSynthesis.addEventListener('voiceschanged', pick, { once: true });
+    setTimeout(pick, 1500);
+  });
+}
+
+function rdSpeak(idx) {
+  if (typeof speechSynthesis === 'undefined') return;
+  speechSynthesis.cancel();
+
+  if (idx < 0 || idx >= READING_PARAS.length) {
+    if (rdState.loop) { rdSpeak(0); return; }
+    rdStop(); return;
+  }
+
+  rdState.current = idx;
+  rdUpdateUI();
+
+  const u = new SpeechSynthesisUtterance(READING_PARAS[idx].text);
+  u.lang = 'ja-JP';
+  u.rate = rdState.rate;
+  if (rdState.jaVoice) u.voice = rdState.jaVoice;
+
+  u.onend   = () => { if (rdState.playing) rdSpeak(idx + 1); };
+  u.onerror = () => { if (rdState.playing) rdSpeak(idx + 1); };
+  speechSynthesis.speak(u);
+}
+
+function rdStop() {
+  rdState.playing = false;
+  rdState.current = -1;
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel();
+  rdUpdateUI();
+}
+
+function rdUpdateUI() {
+  const playBtn = $('rd-play-btn');
+  const stopBtn = $('rd-stop-btn');
+  const loopBtn = $('rd-loop-btn');
+  const status  = $('rd-status');
+  if (!playBtn) return;
+
+  playBtn.textContent = rdState.playing ? '▶ 再生中...' : '▶ 全文再生';
+  playBtn.disabled    = rdState.playing;
+  stopBtn.disabled    = !rdState.playing;
+  loopBtn.classList.toggle('active', rdState.loop);
+  loopBtn.textContent = rdState.loop ? '🔁 リピート ON' : '🔁 リピート';
+
+  if (rdState.playing && rdState.current >= 0) {
+    status.textContent = `段落 ${rdState.current + 1} / ${READING_PARAS.length} 読み上げ中...`;
+  } else {
+    status.textContent = 'タップして再生してください';
+  }
+
+  document.querySelectorAll('.para-card').forEach((el, i) => {
+    el.classList.toggle('playing', rdState.playing && i === rdState.current);
+    const btn = el.querySelector('.para-play-btn');
+    if (!btn) return;
+    const isThis = rdState.playing && i === rdState.current;
+    btn.textContent = isThis ? '⏹ 停止' : '▶';
+    btn.classList.toggle('stop', isThis);
+  });
+}
+
+function renderReading() {
+  const list = $('rd-para-list');
+  if (!list) return;
+  if (list.children.length > 0) { rdUpdateUI(); return; }
+
+  READING_PARAS.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'para-card';
+    card.innerHTML = `
+      <div class="para-header">
+        <span class="para-num">段落 ${p.num}</span>
+        <button class="para-play-btn">▶</button>
+      </div>
+      <div class="para-text">${p.text}</div>`;
+    card.querySelector('.para-play-btn').addEventListener('click', async () => {
+      await rdInitVoices();
+      if (rdState.playing && rdState.current === i) { rdStop(); return; }
+      rdState.playing = true;
+      rdSpeak(i);
+    });
+    list.appendChild(card);
+  });
+}
+
+$('reading-back').addEventListener('click', () => { rdStop(); showScreen('screen-home'); });
+
+$('rd-play-btn').addEventListener('click', async () => {
+  await rdInitVoices();
+  rdState.playing = true;
+  rdSpeak(0);
+});
+
+$('rd-stop-btn').addEventListener('click', rdStop);
+
+$('rd-loop-btn').addEventListener('click', () => {
+  rdState.loop = !rdState.loop;
+  rdUpdateUI();
+});
+
+document.querySelectorAll('.speed-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    rdState.rate = parseFloat(btn.dataset.rate);
+    if (rdState.playing) {
+      const cur = rdState.current;
+      rdState.playing = true;
+      rdSpeak(cur);
+    }
+  });
+});
+
+$('hamburger-reading').addEventListener('click', openMenu);
+
+$('menu-reading').addEventListener('click', () => {
+  setMenuActive('reading');
+  closeMenu();
+  renderReading();
+  showScreen('screen-reading');
+});
 
 /* ── Handle deep-link from vocab app ── */
 const _p = new URLSearchParams(location.search).get('screen');

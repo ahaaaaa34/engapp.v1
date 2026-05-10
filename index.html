@@ -412,6 +412,69 @@
     .menu-item-sub   { font-size: 12px; color: var(--mu); margin-top: 1px; }
     .menu-close-area { flex: 1; }
 
+    /* ── Reading Player ── */
+    .reading-top {
+      background: var(--card); padding: 10px 16px;
+      display: flex; align-items: center; gap: 12px;
+      border-bottom: 1px solid var(--br);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .reading-top h2 { font-size: 16px; font-weight: 700; }
+    .reading-body { max-width: 480px; margin: 0 auto; padding: 16px 16px 64px; }
+
+    .player-card {
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      border-radius: var(--r); padding: 18px; margin-bottom: 16px; color: #fff;
+    }
+    .player-label { font-size: 11px; font-weight: 700; opacity: .75; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+    .speed-row { display: flex; gap: 8px; margin-bottom: 14px; }
+    .speed-btn {
+      padding: 6px 14px; border-radius: 20px;
+      border: 2px solid rgba(255,255,255,.4);
+      background: transparent; color: #fff;
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: all .15s;
+    }
+    .speed-btn.active { background: rgba(255,255,255,.3); border-color: #fff; }
+    .player-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .player-btn {
+      flex: 1; padding: 11px 10px; border-radius: var(--r);
+      border: 2px solid rgba(255,255,255,.35);
+      background: rgba(255,255,255,.12); color: #fff;
+      font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: all .15s; white-space: nowrap;
+    }
+    .player-btn:hover { background: rgba(255,255,255,.25); }
+    .player-btn.active { background: rgba(255,255,255,.3); border-color: #fff; }
+    .player-btn:disabled { opacity: .4; cursor: default; }
+    .player-status {
+      font-size: 12px; opacity: .75; text-align: center;
+      min-height: 18px;
+    }
+
+    .para-card {
+      background: var(--card); border-radius: var(--r);
+      padding: 16px 18px; margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.07);
+      border-left: 3px solid var(--br);
+      transition: border-color .25s, background .25s;
+    }
+    .para-card.playing { border-left-color: var(--p); background: var(--pl); }
+    .para-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .para-num { font-size: 11px; font-weight: 700; color: var(--mu); }
+    .para-play-btn {
+      padding: 5px 14px; border-radius: 20px;
+      background: var(--p); color: #fff; border: none;
+      font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: background .12s;
+    }
+    .para-play-btn:hover { background: var(--pd); }
+    .para-play-btn.stop { background: var(--ng); }
+    .para-text { font-size: 14px; line-height: 2.0; color: var(--tx); }
+
     /* ── 英コミュ screen ── */
     .eigo-top {
       background: var(--card); padding: 10px 16px;
@@ -466,6 +529,13 @@
         <div>
           <div class="menu-item-title">英コミュの単語</div>
           <div class="menu-item-sub">単語学習アプリ</div>
+        </div>
+      </button>
+      <button class="menu-item" id="menu-reading">
+        <span class="menu-icon">🦁</span>
+        <div>
+          <div class="menu-item-title">絶滅危惧種</div>
+          <div class="menu-item-sub">日本語音声リピート</div>
         </div>
       </button>
     </div>
@@ -626,6 +696,38 @@
       <button class="btn-sec" id="retry-btn">もう一度</button>
       <button class="btn-pri" id="home-btn">ホームへ</button>
     </div>
+  </div>
+</div>
+
+<!-- ════ READING PLAYER ════ -->
+<div id="screen-reading" class="screen">
+  <div class="reading-top">
+    <button class="back-btn" id="reading-back">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M14 17L8 11L14 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+    <h2>絶滅危惧種</h2>
+    <button class="hamburger-btn-sm" id="hamburger-reading" aria-label="メニュー">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="reading-body">
+    <div class="player-card">
+      <div class="player-label">音声プレイヤー</div>
+      <div class="speed-row">
+        <button class="speed-btn" data-rate="0.7">ゆっくり</button>
+        <button class="speed-btn active" data-rate="1.0">普通</button>
+        <button class="speed-btn" data-rate="1.3">速い</button>
+      </div>
+      <div class="player-btns">
+        <button class="player-btn" id="rd-play-btn">▶ 全文再生</button>
+        <button class="player-btn" id="rd-stop-btn" disabled>⏹ 停止</button>
+        <button class="player-btn" id="rd-loop-btn">🔁 リピート</button>
+      </div>
+      <div class="player-status" id="rd-status">タップして再生してください</div>
+    </div>
+    <div id="rd-para-list"></div>
   </div>
 </div>
 
