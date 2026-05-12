@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>保健 一問一答</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+      background: #f5f0f8;
+      color: #333;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: linear-gradient(135deg, #8b2252, #c0396e);
+      color: white;
+      padding: 18px 20px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 1.2rem; }
+
+    #progress-wrap {
+      background: #e8d4e8;
+      height: 6px;
+    }
+    #progress-bar {
+      height: 6px;
+      background: linear-gradient(90deg, #8b2252, #c0396e);
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 30px 16px 40px;
+      width: 100%;
+      flex: 1;
+    }
+
+    #counter {
+      text-align: center;
+      font-size: 0.85rem;
+      color: #999;
+      margin-bottom: 20px;
+    }
+
+    #q-card {
+      background: white;
+      border-radius: 16px;
+      padding: 28px 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+      border-left: 5px solid #c0396e;
+      min-height: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #section-badge {
+      display: inline-block;
+      background: #f9e4ef;
+      color: #8b2252;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 100px;
+      width: fit-content;
+    }
+
+    #q-text {
+      font-size: 1.05rem;
+      line-height: 1.8;
+      font-weight: bold;
+    }
+
+    #input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    #ans-input {
+      flex: 1;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 1.05rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+      min-width: 0;
+    }
+    #ans-input:focus { border-color: #c0396e; }
+    #ans-input.correct-input {
+      border-color: #2e9e5b;
+      background: #edfaf3;
+    }
+    #ans-input.wrong-input {
+      border-color: #e04040;
+      background: #fff0f0;
+      animation: shake 0.3s ease;
+    }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    #show-ans-btn {
+      flex-shrink: 0;
+      background: none;
+      border: 1.5px solid #bbb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.8rem;
+      color: #777;
+      cursor: pointer;
+      font-family: inherit;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    #show-ans-btn:hover { border-color: #c0396e; color: #c0396e; background: #fdf0f5; }
+
+    #feedback {
+      text-align: center;
+      font-size: 1.3rem;
+      font-weight: bold;
+      min-height: 36px;
+    }
+    #feedback.correct-fb { color: #2e9e5b; }
+    #feedback.wrong-fb   { color: #e04040; }
+
+    #next-btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #8b2252, #c0396e);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 4px 12px rgba(192,57,110,0.3);
+      transition: transform 0.1s, opacity 0.2s;
+      margin-top: 8px;
+    }
+    #next-btn:hover { transform: translateY(-1px); }
+    #next-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
+
+    #result-screen {
+      display: none;
+      background: white;
+      border-radius: 16px;
+      padding: 36px 24px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    #result-screen h2 { font-size: 1.4rem; color: #8b2252; margin-bottom: 16px; }
+    #result-score { font-size: 3.5rem; font-weight: bold; color: #c0396e; line-height: 1; }
+    #result-sub { font-size: 1rem; color: #888; margin: 8px 0 20px; }
+    #result-msg { font-size: 1.1rem; margin-bottom: 24px; }
+    #result-bar-wrap { background: #f0e0ea; border-radius: 100px; height: 14px; margin: 0 0 24px; overflow: hidden; }
+    #result-bar { height: 100%; border-radius: 100px; background: linear-gradient(90deg, #8b2252, #c0396e); width: 0%; transition: width 1s ease; }
+
+    .btn-retry {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #8b2252, #c0396e);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 4px 12px rgba(192,57,110,0.3);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📖 保健 一問一答（01・06章）</h1>
+</header>
+<div id="progress-wrap"><div id="progress-bar"></div></div>
+
+<div class="container">
+  <div id="counter"></div>
+
+  <div id="q-card">
+    <div id="section-badge"></div>
+    <div id="q-text"></div>
+    <div id="input-row" style="display:none">
+      <input type="text" id="ans-input" placeholder="答えを入力" autocomplete="off" />
+      <button id="show-ans-btn">答えを見る</button>
+    </div>
+    <div id="feedback"></div>
+  </div>
+
+  <button id="next-btn" disabled>次の問題 →</button>
+
+  <div id="result-screen">
+    <h2>🎉 テスト終了！</h2>
+    <div id="result-score"></div>
+    <div id="result-sub"></div>
+    <div id="result-bar-wrap"><div id="result-bar"></div></div>
+    <div id="result-msg"></div>
+    <button class="btn-retry" onclick="startQuiz()">🔄 もう一度チャレンジ</button>
+  </div>
+</div>
+
+<script>
+const questions = [
+  // ── 01 ライフステージと健康 ──
+  { section: '01 ライフステージと健康', q: '心や体が、ある年齢まで変化していくことを何というか？', ans: '発育・発達' },
+  { section: '01 ライフステージと健康', q: '心や体の発育・発達が止まった後に始まることは何か？', ans: '老化' },
+  { section: '01 ライフステージと健康', q: 'ライフイベントの経験や起こる時期などにある、人それぞれの違いを何というか？', ans: '個人差' },
+  { section: '01 ライフステージと健康', q: '就学、就職、結婚、出産、育児、退職などの人生におけるできごとを何というか？', ans: 'ライフイベント' },
+  { section: '01 ライフステージと健康', q: '人生のできごとをもとに乳幼児期、学童期などの段階に分けたものを何というか？', ans: 'ライフステージ' },
+  { section: '01 ライフステージと健康', q: 'ライフステージの変化に伴って変化していく、健康上の問題や課題を何というか？', ans: '健康課題' },
+  { section: '01 ライフステージと健康', q: '0〜4歳を除くと年齢が増すごとに増える、死亡の割合を示す言葉は何か？', ans: '死亡率' },
+  { section: '01 ライフステージと健康', q: '若い人にも多くみられるが、加齢とともに可能性が増す心の病気を何というか？', ans: '精神疾患' },
+  { section: '01 ライフステージと健康', q: '日本で80歳の時点で生存している割合が高いことから、日本は何が高い水準にあると言えるか？', ans: '平均寿命' },
+  { section: '01 ライフステージと健康', q: '乳幼児期に多い死亡原因は、出産などにともなうものや窒息、溺水などの他に、何による異常があるか？', ans: '先天的な異常' },
+  { section: '01 ライフステージと健康', q: '学童期・思春期以降から青年期まで続く、性にかかわる課題として、妊娠、出産、育児のほかに何があるか？', ans: '性行動' },
+  { section: '01 ライフステージと健康', q: '働くこととのかかわりで生じる健康課題として、身体活動の減少と何があるか？', ans: '労働災害' },
+  { section: '01 ライフステージと健康', q: '加齢にともない徐々に直面する健康課題の総称は何か？', ans: '生活習慣病' },
+  { section: '01 ライフステージと健康', q: '乳幼児期の子どもの健康や福祉のために作られた法律で、児童福祉法などのほかに何法があるか？', ans: '母子保健法' },
+  { section: '01 ライフステージと健康', q: '学童期の子どもの健康のために作られた法律は何法か？', ans: '学校保健安全法' },
+  { section: '01 ライフステージと健康', q: '母子保健法や学校保健安全法などにより行われている、体の状態を調べることを何というか？', ans: '健康診断' },
+  { section: '01 ライフステージと健康', q: '健康診断などとともに行われる、健康を保つための指導を何というか？', ans: '保健指導' },
+  { section: '01 ライフステージと健康', q: '2018年にできた、妊娠・出産から成人するまで切れ目のない支援の環境整備をめざす法律は何か？', ans: '成育基本法' },
+  { section: '01 ライフステージと健康', q: '高齢者に対して、医療の提供に関する法律のほかに、どのような法律があるか？', ans: '介護保険法' },
+  { section: '01 ライフステージと健康', q: '高齢者に対して提供されているサポートは、医療と何か？', ans: '介護' },
+  { section: '01 ライフステージと健康', q: '（資料2より）学童期・思春期の健康課題の例として、むし歯、精神疾患のほかに、被害者となる何があるか？', ans: '交通事故' },
+  { section: '01 ライフステージと健康', q: '（資料2より）高年期の健康課題の例として、骨折や交通事故（加害者）のほかに、目の疾患として何が挙げられているか？', ans: '白内障' },
+
+  // ── 06 結婚生活と健康 ──
+  { section: '06 結婚生活と健康', q: '社会的に認められた夫婦の関係として、結婚は何で定められているか？', ans: '法律' },
+  { section: '06 結婚生活と健康', q: '結婚において子どもを産み育てる場合、十分に発達していることが大切な機能は何か？', ans: '生殖機能' },
+  { section: '06 結婚生活と健康', q: '年齢が上がるにつれて妊娠しにくくなったり、出産にともなう何などの危険性が高くなるか？', ans: '死産' },
+  { section: '06 結婚生活と健康', q: '（コラムより）生殖可能な年齢で、避妊をしていないにもかかわらず1年以上妊娠しない状態を何というか？', ans: '不妊' },
+  { section: '06 結婚生活と健康', q: '結婚することで、これまで異なる生活をしていた者どうしの何が始まるか？', ans: '共同生活' },
+  { section: '06 結婚生活と健康', q: '結婚生活で起こることがらに対して、パートナーとどう対処していくことが求められるか？', ans: '協力' },
+  { section: '06 結婚生活と健康', q: '結婚生活を営む上で互いを認めあい、健康に対する何をもつことが必要か？', ans: '責任感' },
+  { section: '06 結婚生活と健康', q: '健康的な結婚生活のために、互いに思いやりをもち、良好な何を築いていくことが必要か？', ans: '人間関係' },
+  { section: '06 結婚生活と健康', q: '良好な人間関係を構築するために欠かせない、心の発達を何面の発達というか？', ans: '精神面' },
+  { section: '06 結婚生活と健康', q: '結婚に際して、お互いの生活習慣病の有無やアレルギー体質など、何を把握しておくことが必要か？', ans: '健康状態' },
+  { section: '06 結婚生活と健康', q: '健康状態を把握することで対策がとれる、親から子へ受け継がれる病気を何的病気というか？', ans: '遺伝的な病気' },
+  { section: '06 結婚生活と健康', q: '運動、食事、休養・睡眠、喫煙、飲酒などの行動を何というか？', ans: '生活習慣' },
+  { section: '06 結婚生活と健康', q: '親の朝食欠食は、子どもの何に強く関係すると指摘されているか？', ans: '食習慣' },
+  { section: '06 結婚生活と健康', q: '結婚生活においてともなう、家族の健康への何を自覚する必要があるか？', ans: '責任' },
+  { section: '06 結婚生活と健康', q: '同居する家族から受ける家庭内での暴力を、アルファベット2文字で何というか？', ans: 'DV' },
+  { section: '06 結婚生活と健康', q: '子どもに対して身体的・心理的・性的な暴力を加えたり、世話を怠ったりする行為を何というか？', ans: '児童虐待' },
+  { section: '06 結婚生活と健康', q: '児童虐待のうち、殴る、蹴るなどの暴力を加えることを何的虐待というか？', ans: '身体的虐待' },
+  { section: '06 結婚生活と健康', q: '児童虐待のうち、言葉による脅しや無視などで著しい心理的外傷を与えることを何的虐待というか？', ans: '心理的虐待' },
+  { section: '06 結婚生活と健康', q: '児童虐待のうち、性行為の強要やわいせつな行為をすることを何的虐待というか？', ans: '性的虐待' },
+  { section: '06 結婚生活と健康', q: '児童虐待のうち、食事を与えない、学校に行かせないなどの「保護の怠慢、養育の放棄」をカタカナで何というか？', ans: 'ネグレクト' },
+];
+
+let idx = 0, correct = 0, answered = false, showing = false;
+let order = [];
+
+function normalize(s) {
+  return s.trim().replace(/\s+/g, '')
+    .replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function startQuiz() {
+  idx = 0; correct = 0; answered = false; showing = false;
+  order = shuffle([...Array(questions.length).keys()]);
+  document.getElementById('result-screen').style.display = 'none';
+  document.getElementById('q-card').style.display = 'flex';
+  document.getElementById('counter').style.display = 'block';
+  document.getElementById('next-btn').style.display = 'block';
+  loadQuestion();
+}
+
+function loadQuestion() {
+  answered = false;
+  showing = false;
+  const q = questions[order[idx]];
+  const total = questions.length;
+
+  document.getElementById('counter').textContent = `${idx + 1} / ${total}`;
+  document.getElementById('progress-bar').style.width = (idx / total * 100) + '%';
+  document.getElementById('section-badge').textContent = q.section;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = '';
+
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.disabled = true;
+  nextBtn.textContent = idx + 1 < total ? '次の問題 →' : '結果を見る';
+
+  document.getElementById('input-row').style.display = 'flex';
+  const inp = document.getElementById('ans-input');
+  inp.value = '';
+  inp.className = '';
+  inp.placeholder = '答えを入力';
+  inp.disabled = false;
+  inp.focus();
+
+  const showBtn = document.getElementById('show-ans-btn');
+  showBtn.textContent = '答えを見る';
+  showBtn.onclick = () => {
+    showing = !showing;
+    inp.placeholder = showing ? q.ans : '答えを入力';
+    showBtn.textContent = showing ? '隠す' : '答えを見る';
+  };
+}
+
+document.getElementById('ans-input').addEventListener('input', () => {
+  if (answered) return;
+  const q = questions[order[idx]];
+  const inp = document.getElementById('ans-input');
+  const userVal = normalize(inp.value);
+  const correctVal = normalize(q.ans);
+  const isOk = userVal === correctVal ||
+    (correctVal.includes(userVal) && userVal.length >= 2 && userVal.length >= correctVal.length - 1);
+  if (isOk) {
+    answered = true;
+    correct++;
+    inp.classList.add('correct-input');
+    inp.disabled = true;
+    showFeedback(true, q.ans);
+    document.getElementById('next-btn').disabled = false;
+  }
+});
+
+function showFeedback(isOk, hint) {
+  const fb = document.getElementById('feedback');
+  if (isOk) {
+    fb.textContent = '✅ 正解！';
+    fb.className = 'correct-fb';
+  } else {
+    fb.textContent = `❌ 不正解　正解：${hint}`;
+    fb.className = 'wrong-fb';
+    const inp = document.getElementById('ans-input');
+    if (!inp.disabled) {
+      inp.classList.add('wrong-input');
+      setTimeout(() => inp.classList.remove('wrong-input'), 400);
+    }
+  }
+}
+
+document.getElementById('show-ans-btn').addEventListener('click', () => {
+  if (answered) return;
+  const q = questions[order[idx]];
+  answered = true;
+  const inp = document.getElementById('ans-input');
+  inp.disabled = true;
+  showFeedback(false, q.ans);
+  document.getElementById('next-btn').disabled = false;
+});
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  if (!answered) return;
+  idx++;
+  if (idx >= questions.length) {
+    showResult();
+  } else {
+    loadQuestion();
+  }
+});
+
+document.getElementById('ans-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && answered) {
+    document.getElementById('next-btn').click();
+  }
+});
+
+function showResult() {
+  const total = questions.length;
+  const pct = Math.round(correct / total * 100);
+  document.getElementById('q-card').style.display = 'none';
+  document.getElementById('counter').style.display = 'none';
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('progress-bar').style.width = '100%';
+
+  const rs = document.getElementById('result-screen');
+  rs.style.display = 'block';
+  document.getElementById('result-score').textContent = `${pct}%`;
+  document.getElementById('result-sub').textContent = `${correct} / ${total} 問正解`;
+
+  let msg = '';
+  if (pct === 100) msg = '🎉 満点！完璧です！';
+  else if (pct >= 80) msg = '👏 よくできました！';
+  else if (pct >= 60) msg = '📚 もう少し復習しましょう！';
+  else msg = '💪 教科書を見直してもう一度！';
+  document.getElementById('result-msg').textContent = msg;
+
+  setTimeout(() => {
+    document.getElementById('result-bar').style.width = pct + '%';
+  }, 100);
+}
+
+startQuiz();
+</script>
+</body>
+</html>
